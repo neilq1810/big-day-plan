@@ -58,8 +58,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .gsel{border-left-width:6px;border-radius:8px}
 .pill{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;min-width:92px}
 .pill[aria-checked=true]{background:var(--ok);border-color:var(--ok);color:#fff}
-.pill.plus{min-width:72px}
-.pill.plus[aria-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.party{border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
+.party-plus1{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.party-couple{background:var(--neil-family);color:#fff;border-color:var(--neil-family)}
 .del{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;border-radius:6px}
 .del:hover{color:var(--danger);background:var(--soft)}
 .row-off td:not(:last-child) .cell-input{color:var(--muted)}
@@ -106,6 +107,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
 .vcard li:last-child{border-bottom:0}
 .vcard li.off .nm{color:var(--muted);text-decoration:line-through}
 .tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--accent);color:var(--accent-ink)}
+.tag.couple{background:var(--neil-family)}
 .tag.off{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:2px 0 10px}
 </style>
@@ -137,7 +139,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
       <div class="addrow">
         <input type="text" id="addName" placeholder="Add a guest&hellip; (press Enter)" aria-label="Guest name" autocomplete="off">
         <select id="addGroup" aria-label="Group"></select>
-        <label><input type="checkbox" id="addPlus"> +1</label>
+        <select id="addParty" aria-label="Single, +1 or couple"></select>
         <button class="btn primary" id="addBtn">Add</button>
       </div>
       <details>
@@ -154,8 +156,9 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
           <option value="all">All statuses</option>
           <option value="invited">Invited</option>
           <option value="not">Not invited</option>
-          <option value="plus">Has +1</option>
-          <option value="noplus">No +1</option>
+          <option value="single">Single</option>
+          <option value="plus1">+1</option>
+          <option value="couple">Couple</option>
         </select>
         <button class="btn" id="exportBtn">Export CSV</button>
         <label class="btn" style="cursor:pointer">Import CSV<input type="file" id="importFile" accept=".csv,text/csv" hidden></label>
@@ -169,7 +172,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
           <th><button data-sort="name">Name <span data-arrow="name"></span></button></th>
           <th><button data-sort="group">Group <span data-arrow="group"></span></button></th>
           <th><button data-sort="invited">Invited <span data-arrow="invited"></span></button></th>
-          <th><button data-sort="plus">+1 <span data-arrow="plus"></span></button></th>
+          <th><button data-sort="party">Party <span data-arrow="party"></span></button></th>
           <th>Notes</th>
           <th><span class="sr" style="position:absolute;left:-9999px">Delete</span></th>
         </tr></thead>
@@ -198,14 +201,64 @@ const GROUPS = [
 ];
 const G = Object.fromEntries(GROUPS.map(g=>[g.id,g]));
 const col = id => `var(--${id})`;
-const KEY = 'neil-jen-guestlist-v2';
+const KEY = 'neil-jen-guestlist-v3';
+const PARTY = {single:'Single', plus1:'+1', couple:'Couple'};
+const TWO = /\s(\+|&|and)\s/i;
 const DEFAULTS = [
-  ['Angela','jen-family',0],['David (Dad)','jen-family',0],['David (Brother)','jen-family',1],
-  ['Shauna Keating','jen-family',0],['Megan Keating','jen-family',0],['Suzanne','jen-family',0],
-  ['Niamh + Ian','jen-friends',1],['Katie + Luke','jen-friends',1],['Naomi + Tony','joint-friends',1],
-  ['Michelle + Niall','jen-friends',1],['Anne and Stefan','neil-family',1],['Neil Da','neil-family',0],
-  ['Josh + Jade','neil-family',1],['Cian + Amy','neil-family',1],['Fiadh','kids',0],['Jayden','kids',0],
-].map(([name,group,plus])=>({id:uid(),name,group,invited:true,plus:!!plus,notes:''}));
+  ["Angela","jen-family","single"],
+  ["David (Dad)","jen-family","single"],
+  ["David (Brother)","jen-family","plus1"],
+  ["Shauna Keating","jen-family","single"],
+  ["Megan + Suzanne","jen-family","couple"],
+  ["Niamh + Ian","jen-friends","couple"],
+  ["Katie + Luke","jen-friends","couple"],
+  ["Naomi + Tony","joint-friends","couple"],
+  ["Michelle + Niall","jen-friends","couple"],
+  ["Anne and Stefan","neil-family","couple"],
+  ["Neil Da","neil-family","single"],
+  ["Josh + Jade","neil-family","couple"],
+  ["Cian + Amy","neil-family","couple"],
+  ["Fiadh","kids","single"],
+  ["Jayden","kids","single"],
+  ["Grainne Breen","jen-friends","single"],
+  ["Maria Gilfoyle","jen-friends","single"],
+  ["Celine","jen-friends","single"],
+  ["Esther","jen-friends","single"],
+  ["Nathan + Danielle","neil-friends","couple"],
+  ["Gary + Amy","neil-friends","couple"],
+  ["Ghosty","neil-friends","single"],
+  ["Conor Staunton","neil-friends","single"],
+  ["Kegan","neil-friends","single"],
+  ["Savannah","neil-friends","single"],
+  ["Conor & Colm","neil-family","couple"],
+  ["Julianne + Fella","neil-family","couple"],
+  ["Anju","jen-friends","single"],
+  ["Ciara Jones","jen-friends","single"],
+  ["Shauna Fitzgerald","jen-friends","single"],
+  ["Aoife Murray","jen-friends","single"],
+  ["Dawn Travers","jen-friends","single"],
+  ["Jason Griffiths","neil-friends","single"],
+  ["Skin + Shannon","neil-friends","couple"],
+  ["Sean Doyle","joint-friends","single"],
+  ["Shane + Ailise","joint-friends","couple"],
+  ["James + Laura","neil-friends","couple"],
+  ["John + Sharon Quinn","neil-family","couple"],
+  ["Paul + Mary Quinn","neil-family","couple"],
+  ["Mark + Charmaine Quinn","neil-family","couple"],
+  ["Aodhan Callan","joint-friends","single"],
+  ["Michael Twohig","joint-friends","single"],
+  ["Luke Guinane","joint-friends","single"],
+  ["Martin + Wife Quinn","neil-family","couple"],
+  ["Mary Hutchinson","neil-family","single"],
+  ["Stephen Hutchinson","neil-family","single"],
+  ["Paul + Dolores Hutchinson","neil-family","couple"],
+  ["Phillis + Pete Hutchinson","neil-family","couple"],
+  ["Karen + Michael","joint-friends","couple"],
+  ["Jake Connolly","joint-friends","single"],
+  ["Padraig Walsh","joint-friends","single"],
+  ["Amy Strilciw","neil-family","single"],
+  ["Lewis Strilciw","neil-family","single"]
+].map(([name,group,party])=>({id:uid(),name,group,invited:true,party,notes:''}));
 
 let state = load();
 let ui = {q:'', status:'all', group:null, sort:null, dir:1};
@@ -213,7 +266,7 @@ let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.guests)) return {guests:s.guests, target:s.target||0};
+    if(s && Array.isArray(s.guests)) return {guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
   }catch(e){}
   return {guests:DEFAULTS, target:0};
 }
@@ -224,18 +277,20 @@ const $ = id => document.getElementById(id);
 
 /* ---------- stats ---------- */
 function stats(guests){
-  const s = {listed:guests.length, invited:0, plus:0, notInvited:0, notInvitedPlus:0};
+  const s = {listed:guests.length, invited:0, single:0, plus1:0, couple:0, notInvited:0, notInvitedExtra:0};
   for(const g of guests){
-    if(g.invited){ s.invited++; if(g.plus) s.plus++; }
-    else { s.notInvited++; if(g.plus) s.notInvitedPlus++; }
+    if(g.invited){ s.invited++; s[g.party]++; }
+    else { s.notInvited++; if(g.party!=='single') s.notInvitedExtra++; }
   }
-  s.head = s.invited + s.plus;
+  s.extra = s.plus1 + s.couple;
+  s.head = s.invited + s.extra;
   return s;
 }
 const forGroups = ids => stats(state.guests.filter(g=>ids.includes(g.group)));
 
 /* ---------- guest list ---------- */
 function initControls(){
+  $('addParty').innerHTML = Object.entries(PARTY).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   $('addGroup').innerHTML = GROUPS.map(g=>`<option value="${g.id}">${g.label}</option>`).join('');
   $('chips').innerHTML = GROUPS.map(g=>`<button class="chip" data-g="${g.id}" aria-pressed="false"><span class="dot" style="background:${col(g.id)}"></span>${g.label} <span class="muted" data-count="${g.id}"></span></button>`).join('');
 }
@@ -246,14 +301,13 @@ function visibleGuests(){
     if(ui.group && g.group!==ui.group) return false;
     if(ui.status==='invited' && !g.invited) return false;
     if(ui.status==='not' && g.invited) return false;
-    if(ui.status==='plus' && !g.plus) return false;
-    if(ui.status==='noplus' && g.plus) return false;
+    if(['single','plus1','couple'].includes(ui.status) && g.party!==ui.status) return false;
     if(q && !(g.name.toLowerCase().includes(q) || (g.notes||'').toLowerCase().includes(q))) return false;
     return true;
   });
   if(ui.sort){
     const k = ui.sort;
-    const val = g => k==='name' ? g.name.toLowerCase() : k==='group' ? GROUPS.findIndex(x=>x.id===g.group) : +!!g[k];
+    const val = g => k==='name' ? g.name.toLowerCase() : k==='group' ? GROUPS.findIndex(x=>x.id===g.group) : k==='party' ? Object.keys(PARTY).indexOf(g.party) : +!!g[k];
     rows = rows.slice().sort((a,b)=>{ const x=val(a), y=val(b); return (x<y?-1:x>y?1:0)*ui.dir; });
   }
   return rows;
@@ -267,7 +321,7 @@ function renderList(){
       <td><select class="gsel" data-f="group" aria-label="Group" style="border-left-color:${col(g.group)}">
         ${GROUPS.map(x=>`<option value="${x.id}"${x.id===g.group?' selected':''}>${x.label}</option>`).join('')}</select></td>
       <td><button class="pill" role="switch" aria-checked="${g.invited}" data-t="invited">${g.invited?'Invited':'Not invited'}</button></td>
-      <td><button class="pill plus" role="switch" aria-checked="${g.plus}" data-t="plus">${g.plus?'+1':'No +1'}</button></td>
+      <td><select class="party party-${g.party}" data-f="party" aria-label="Single, +1 or couple">${Object.entries(PARTY).map(([k,v])=>`<option value="${k}"${k===g.party?' selected':''}>${v}</option>`).join('')}</select></td>
       <td><input class="cell-input" data-f="notes" value="${esc(g.notes)}" placeholder="Notes" aria-label="Notes" style="min-width:160px"></td>
       <td><button class="del" data-del title="Remove guest" aria-label="Remove ${esc(g.name)}">&times;</button></td>
     </tr>`).join('');
@@ -292,12 +346,12 @@ function renderList(){
 
 function renderFoot(){
   const s = stats(state.guests);
-  $('foot').innerHTML = `<span><b>${s.listed}</b> on the list</span><span><b>${s.invited}</b> invited</span><span><b>${s.plus}</b> plus-ones</span><span>Headcount <b>${s.head}</b></span><span><b>${s.notInvited}</b> not invited</span>`;
+  $('foot').innerHTML = `<span><b>${s.listed}</b> on the list</span><span><b>${s.invited}</b> invited</span><span><b>${s.single}</b> singles &middot; <b>${s.plus1}</b> +1s &middot; <b>${s.couple}</b> couples</span><span>Headcount <b>${s.head}</b></span><span><b>${s.notInvited}</b> not invited</span>`;
 }
 
-function addGuests(names, group, plus=false){
+function addGuests(names, group, party='single'){
   const out = names.map(n=>n.trim()).filter(Boolean);
-  out.forEach(name=>state.guests.push({id:uid(), name, group, invited:true, plus, notes:''}));
+  out.forEach(name=>state.guests.push({id:uid(), name, group, invited:true, party, notes:''}));
   if(out.length){ save(); renderList(); }
   return out.length;
 }
@@ -305,8 +359,8 @@ function addGuests(names, group, plus=false){
 /* ---------- CSV ---------- */
 function toCSV(){
   const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
-  const lines = [['Name','Group','Invited','Plus one','Notes'].map(q).join(',')];
-  state.guests.forEach(g=>lines.push([g.name,G[g.group].label,g.invited?'yes':'no',g.plus?'yes':'no',g.notes].map(q).join(',')));
+  const lines = [['Name','Group','Invited','Party','Notes'].map(q).join(',')];
+  state.guests.forEach(g=>lines.push([g.name,G[g.group].label,g.invited?'yes':'no',PARTY[g.party],g.notes].map(q).join(',')));
   return lines.join('\n');
 }
 function parseCSV(text){
@@ -329,16 +383,23 @@ function importCSV(text){
   const head = rows[0].map(h=>h.trim().toLowerCase());
   const hasHead = head.includes('name');
   const idx = n => hasHead ? head.indexOf(n) : -1;
-  const [iN,iG,iI,iP,iNo] = hasHead ? [idx('name'),idx('group'),idx('invited'),idx('plus one'),idx('notes')] : [0,1,2,3,4];
+  const [iN,iG,iI,iP,iNo] = hasHead ? [idx('name'),idx('group'),idx('invited'),Math.max(idx('party'),idx('plus one')),idx('notes')] : [0,1,2,3,4];
   const yes = v => /^(y|yes|true|1|x)$/i.test((v||'').trim());
   const groupOf = v => {
     const t=(v||'').trim().toLowerCase().replace(/[\s_]+/g,'-');
     return (GROUPS.find(g=>g.id===t || g.label.toLowerCase().replace(/\s+/g,'-')===t)||GROUPS[2]).id;
   };
+  const partyOf = (v,name) => {
+    const t=(v||'').trim().toLowerCase();
+    if(t==='couple') return 'couple';
+    if(t==='+1'||t==='plus1') return 'plus1';
+    if(t==='single') return 'single';
+    return yes(t) ? (TWO.test(name)?'couple':'plus1') : (TWO.test(name)?'couple':'single');  // old yes/no column
+  };
   let n=0;
   for(const r of rows.slice(hasHead?1:0)){
     const name=(r[iN]||'').trim(); if(!name) continue;
-    state.guests.push({id:uid(), name, group:groupOf(r[iG]), invited:iI<0?true:yes(r[iI]), plus:iP<0?false:yes(r[iP]), notes:(r[iNo]||'').trim()});
+    state.guests.push({id:uid(), name, group:groupOf(r[iG]), invited:iI<0?true:yes(r[iI]), party:partyOf(r[iP], name), notes:(r[iNo]||'').trim()});
     n++;
   }
   save(); renderList(); return n;
@@ -351,22 +412,22 @@ function stackBar(s, color, max){
   const w = n => max ? (n/max*100).toFixed(2)+'%' : '0%';
   return `<div class="stack" style="color:${color}" aria-hidden="true">
     ${s.invited?`<i class="g" style="width:${w(s.invited)};background:${color}"></i>`:''}
-    ${s.plus?`<i class="p" style="width:${w(s.plus)};background-color:${color}"></i>`:''}
+    ${s.extra?`<i class="p" style="width:${w(s.extra)};background-color:${color}"></i>`:''}
     ${s.notInvited?`<i class="o" style="width:${w(s.notInvited)}"></i>`:''}</div>`;
 }
 
 function lens(title, note, defs){
   const data = defs.map(d=>({...d, s:forGroups(d.groups)}));
-  const max = Math.max(1, ...data.map(d=>d.s.invited+d.s.plus+d.s.notInvited));
+  const max = Math.max(1, ...data.map(d=>d.s.invited+d.s.extra+d.s.notInvited));
   const tot = stats(state.guests);
   const row = (label,color,s,cls='') => `<tr class="${cls}">
       <td>${color?`<span class="dot" style="background:${color};margin-right:8px"></span>`:''}${label}</td>
-      <td class="num">${s.invited}</td><td class="num">${s.plus}</td><td class="num"><b>${s.head}</b></td>
-      <td class="num">${pct(s.head,tot.head)}</td><td class="num">${pct(s.plus,s.invited)}</td><td class="num">${s.notInvited}</td>
+      <td class="num">${s.invited}</td><td class="num">${s.single}</td><td class="num">${s.plus1}</td><td class="num">${s.couple}</td><td class="num"><b>${s.head}</b></td>
+      <td class="num">${pct(s.head,tot.head)}</td><td class="num">${s.notInvited}</td>
       <td class="bar">${color?stackBar(s,color,max):''}</td></tr>`;
   return `<section class="card lens"><h2>${title}</h2><p class="note">${note}</p>
     <div class="tablewrap" style="border:0"><table>
-    <thead><tr><th></th><th class="num">Invited</th><th class="num">+1s</th><th class="num">Headcount</th><th class="num">Share</th><th class="num">+1 rate</th><th class="num">Not invited</th><th></th></tr></thead>
+    <thead><tr><th></th><th class="num">Invitations</th><th class="num">Singles</th><th class="num">+1s</th><th class="num">Couples</th><th class="num">Headcount</th><th class="num">Share</th><th class="num">Not invited</th><th></th></tr></thead>
     <tbody>${data.map(d=>row(d.label,d.color,d.s)).join('')}${row('Total','',tot,'total')}</tbody></table></div></section>`;
 }
 
@@ -397,13 +458,13 @@ function renderSummary(){
         ${target?`<div class="meter ${over?'over':''}"><i style="width:${prog}%"></i></div>`:''}
         <div class="sub" style="${over?'color:var(--danger)':''}">${diff}</div>
         <div class="target"><label for="targetIn">Target</label><input type="number" id="targetIn" min="0" value="${target||''}" placeholder="e.g. 120"></div></div>
-      <div class="kpi"><div class="label">Invited guests</div><div class="value">${t.invited}</div><div class="sub">of ${t.listed} on the list</div></div>
-      <div class="kpi"><div class="label">Plus-ones</div><div class="value">${t.plus}</div><div class="sub">${pct(t.plus,t.invited)} of invited guests</div></div>
-      <div class="kpi"><div class="label">Not invited</div><div class="value">${t.notInvited}</div><div class="sub">${t.notInvitedPlus?`+ up to ${t.notInvitedPlus} plus-ones if invited`:'on the maybe list'}</div></div>
+      <div class="kpi"><div class="label">Invitations</div><div class="value">${t.invited}</div><div class="sub">of ${t.listed} on the list</div></div>
+      <div class="kpi"><div class="label">Party mix</div><div class="value">${t.single} / ${t.plus1} / ${t.couple}</div><div class="sub">singles / +1s / couples</div></div>
+      <div class="kpi"><div class="label">Not invited</div><div class="value">${t.notInvited}</div><div class="sub">${t.notInvited?`would add ${t.notInvited+t.notInvitedExtra} people if invited`:'on the maybe list'}</div></div>
     </div>
 
     <section class="card"><h2>Who&rsquo;s in the room</h2>
-      <p class="note">Share of total headcount (invited guests + their +1s).</p>
+      <p class="note">Share of total headcount (invited people, including +1s and couples).</p>
       <div class="share" role="img" aria-label="Headcount share by side">${share(sides)}</div>
       <div class="legend">${sides.map(d=>`<span><i class="sw" style="background:${d.color}"></i>${d.label} &middot; ${forGroups(d.groups).head}</span>`).join('')}</div>
       <div class="share" role="img" aria-label="Headcount share by group">${share(GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}</div>
@@ -411,7 +472,7 @@ function renderSummary(){
     </section>
 
     <div class="legend" style="margin:0 2px 10px">
-      <span><i class="sw guest"></i>Invited guest</span><span><i class="sw plusone"></i>Plus-one</span><span><i class="sw off"></i>Not invited</span>
+      <span><i class="sw guest"></i>First guest</span><span><i class="sw plusone"></i>+1 / partner</span><span><i class="sw off"></i>Not invited</span>
     </div>
 
     ${lens('By group','Each guest group.', GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}
@@ -420,7 +481,7 @@ function renderSummary(){
       {label:'Family',color:col('family'),groups:['jen-family','neil-family']},
       {label:'Friends',color:col('friends'),groups:['joint-friends','neil-friends','jen-friends']},
       {label:'Kids',color:col('kidsside'),groups:['kids']}])}
-    <p class="note">Headcount = invited guests + their +1s. Share is of total headcount. +1 rate = plus-ones &divide; invited guests.</p>`;
+    <p class="note">Each invitation is one household: a single counts as 1 person, a +1 or a couple as 2. Share is of total headcount.</p>`;
 
   $('targetIn').addEventListener('change', e=>{ state.target = Math.max(0, +e.target.value||0); save(); renderSummary(); });
 }
@@ -429,13 +490,13 @@ function renderSummary(){
 function renderView(){
   const showNot = $('showNot').checked;
   const t = stats(state.guests);
-  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invited + ${t.plus} plus-ones)` + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
+  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
   const cards = GROUPS.map(g=>{
     const list = state.guests.filter(x=>x.group===g.id && (showNot || x.invited));
     if(!list.length) return '';
     const s = stats(state.guests.filter(x=>x.group===g.id));
     return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${s.head} attending</span></h2><ul>${
-      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.plus?'<span class="tag">+1</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
+      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
     }</ul></section>`;
   }).join('');
   $('viewGrid').innerHTML = cards || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
@@ -456,8 +517,8 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
 function doAdd(){
   const name = $('addName').value;
   if(!name.trim()) return;
-  addGuests([name], $('addGroup').value, $('addPlus').checked);
-  $('addName').value=''; $('addPlus').checked=false; $('addName').focus();
+  addGuests([name], $('addGroup').value, $('addParty').value);
+  $('addName').value=''; $('addName').focus();
 }
 $('addBtn').onclick = doAdd;
 $('addName').addEventListener('keydown', e=>{ if(e.key==='Enter') doAdd(); });
@@ -499,7 +560,7 @@ $('empty').addEventListener('click', e=>{
     ['neil-friends','Rob',1],['neil-friends','Chris',0],['neil-friends','Jamie (work)',0],
     ['jen-friends','Sophie',1],['jen-friends','Hannah',0],['jen-friends','Mei',1],['jen-friends','Dana',0],
   ];
-  S.forEach(([group,name,plus],i)=>state.guests.push({id:uid(),name,group,invited:i%7!==6,plus:!!plus,notes:''}));
+  S.forEach(([group,name,plus],i)=>state.guests.push({id:uid(),name,group,invited:i%7!==6,party:plus?'plus1':'single',notes:''}));
   save(); renderList();
 });
 
