@@ -27,9 +27,10 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 h1{font:600 28px/1.1 Georgia,"Times New Roman",serif;margin:0;letter-spacing:.2px}
 h1 small{display:block;font:500 12px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 h2{font-size:15px;margin:0 0 4px;font-weight:600}
-nav{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:999px}
-nav button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
+nav{display:flex;gap:4px;max-width:100%;overflow-x:auto;background:var(--soft);padding:4px;border-radius:999px}
+nav button{white-space:nowrap;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer}
 nav button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+@media (max-width:520px){nav{width:100%}nav button{flex:1;padding:7px 4px;font-size:14px}}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -112,6 +113,9 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
 .tag.couple{background:var(--neil-family)}
 .tag.maybe{background:var(--jen-friends);color:#2b2622}
 .tag.off{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:18px;width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+#csvText{width:100%;height:240px;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre}
 .note{font-size:13px;color:var(--muted);margin:2px 0 10px}
 </style>
 </head>
@@ -120,18 +124,31 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
   <header>
     <h1><small>Wedding planning</small>Neil &amp; Jen &mdash; Guest List</h1>
     <nav role="tablist" aria-label="Pages">
-      <button role="tab" id="tab-view" aria-selected="true" data-view="view">View</button>
+      <button role="tab" id="tab-view" aria-selected="true" data-view="view">Attending</button>
+      <button role="tab" id="tab-out" aria-selected="false" data-view="out">Not attending</button>
       <button role="tab" id="tab-list" aria-selected="false" data-view="list">Edit</button>
       <button role="tab" id="tab-summary" aria-selected="false" data-view="summary">Summary</button>
     </nav>
   </header>
 
+  <dialog id="csvDialog">
+    <h2 style="margin:0 0 6px">Export CSV</h2>
+    <p class="note">Copy this text, or download it as a file. Some in-app browsers (Messenger, Instagram) block downloads &mdash; use Copy or Share there.</p>
+    <textarea id="csvText" readonly></textarea>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn primary" id="csvCopy">Copy</button>
+      <button class="btn" id="csvShare" hidden>Share</button>
+      <button class="btn" id="csvDownload">Download</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="csvClose">Close</button>
+    </div>
+    <p class="note" id="csvMsg" style="margin:8px 0 0"></p>
+  </dialog>
+
   <!-- VIEW -->
   <main id="view-view">
     <div class="toolbar" style="margin-bottom:14px">
       <span class="muted" id="viewTotals"></span>
-      <span style="flex:1"></span>
-      <label><input type="checkbox" id="showNot" checked> Show not invited</label>
     </div>
     <div class="vgrid" id="viewGrid"></div>
   </main>
@@ -206,81 +223,125 @@ const GROUPS = [
 ];
 const G = Object.fromEntries(GROUPS.map(g=>[g.id,g]));
 const col = id => `var(--${id})`;
-const KEY = 'neil-jen-guestlist-v3';
+const KEY = 'neil-jen-guestlist-v4';
 const PARTY = {single:'Single', plus1:'+1', couple:'Couple'};
 const TWO = /\s(\+|&|and)\s/i;
 const DEFAULTS = [
-  ["Angela","jen-family","single"],
-  ["David (Dad)","jen-family","single"],
-  ["David (Brother)","jen-family","plus1"],
-  ["Shauna Keating","jen-family","single"],
-  ["Megan + Suzanne","jen-family","couple"],
-  ["Niamh + Ian","jen-friends","couple"],
-  ["Katie + Luke","jen-friends","couple"],
-  ["Naomi + Tony","joint-friends","couple"],
-  ["Michelle + Niall","jen-friends","couple"],
-  ["Anne and Stefan","neil-family","couple"],
-  ["Neil Da","neil-family","single"],
-  ["Josh + Jade","neil-family","couple"],
-  ["Cian + Amy","neil-family","couple"],
-  ["Fiadh","kids","single"],
-  ["Jayden","kids","single"],
-  ["Grainne Breen","jen-friends","single"],
-  ["Maria Gilfoyle","jen-friends","single"],
-  ["Celine","jen-friends","single"],
-  ["Esther","jen-friends","single"],
-  ["Nathan + Danielle","neil-friends","couple"],
-  ["Gary + Amy","neil-friends","couple"],
-  ["Ghosty","neil-friends","single"],
-  ["Conor Staunton","neil-friends","single"],
-  ["Kegan","neil-friends","single"],
-  ["Savannah","neil-friends","single"],
-  ["Conor & Colm","neil-family","couple"],
-  ["Julianne + Fella","neil-family","couple"],
-  ["Anju","jen-friends","single"],
-  ["Ciara Jones","jen-friends","single"],
-  ["Shauna Fitzgerald","jen-friends","single"],
-  ["Aoife Murray","jen-friends","single"],
-  ["Dawn Travers","jen-friends","single"],
-  ["Jason Griffiths","neil-friends","single"],
-  ["Skin + Shannon","neil-friends","couple"],
-  ["Sean Doyle","joint-friends","single"],
-  ["Shane + Ailise","joint-friends","couple"],
-  ["Rachel & Tony","joint-friends","couple"],
-  ["James + Laura","neil-friends","couple"],
-  ["John + Sharon Quinn","neil-family","couple"],
-  ["Paul + Mary Quinn","neil-family","couple"],
-  ["Mark + Charmaine Quinn","neil-family","couple"],
-  ["Aodhan Callan","joint-friends","single"],
-  ["Michael Twohig","joint-friends","single"],
-  ["Luke Guinane","joint-friends","single"],
-  ["Martin + Wife Quinn","neil-family","couple"],
-  ["Mary Hutchinson","neil-family","single"],
-  ["Stephen Hutchinson","neil-family","single"],
-  ["Paul + Dolores Hutchinson","neil-family","couple"],
-  ["Phillis + Pete Hutchinson","neil-family","couple"],
-  ["Karen + Michael","joint-friends","couple"],
-  ["Jake Connolly","joint-friends","single"],
-  ["Padraig Walsh","joint-friends","single"],
-  ["Amy Strilciw","neil-family","single"],
-  ["Lewis Strilciw","neil-family","single"]
-].map(([name,group,party])=>({id:uid(),name,group,invited:true,party,notes:''}));
+  ["David & Angela","jen-family","couple",0],
+  ["David (Brother)","jen-family","plus1",0],
+  ["Shauna Keating","jen-family","single",0],
+  ["Megan + Suzanne","jen-family","couple",0],
+  ["Niamh + Ian","jen-friends","couple",0],
+  ["Katie + Luke","jen-friends","couple",0],
+  ["Naomi + Tony","joint-friends","couple",0],
+  ["Michelle + Niall","jen-friends","couple",0],
+  ["Anne and Stefan","neil-family","couple",0],
+  ["Neil Da","neil-family","single",0],
+  ["Josh + Jade","neil-family","couple",0],
+  ["Cian + Amy","neil-family","couple",0],
+  ["Fiadh","kids","single",0],
+  ["Jayden","kids","single",1],
+  ["Grainne Breen","jen-friends","single",0],
+  ["Maria Gilfoyle","jen-friends","single",0],
+  ["Celine","jen-friends","single",0],
+  ["Esther","jen-friends","single",0],
+  ["Nathan + Danielle","neil-friends","couple",0],
+  ["Gary + Amy","neil-friends","couple",0],
+  ["Ghosty","neil-friends","single",0],
+  ["Conor Staunton","neil-friends","single",0],
+  ["Kegan","neil-friends","single",0],
+  ["Savannah","neil-friends","single",0],
+  ["Conor & Colm","neil-family","couple",0],
+  ["Julianne + Fella","neil-family","couple",0],
+  ["Anju","jen-friends","single",0],
+  ["Ciara Jones","jen-friends","single",0],
+  ["Shauna Fitzgerald","jen-friends","single",1],
+  ["Aoife Murray","jen-friends","single",1],
+  ["Dawn Travers","jen-friends","single",0],
+  ["Jason Griffiths","neil-friends","single",0],
+  ["Skin + Shannon","neil-friends","couple",0],
+  ["Sean Doyle","joint-friends","single",0],
+  ["Shane + Ailise","joint-friends","couple",0],
+  ["Rachel & Tony","joint-friends","couple",0],
+  ["James + Laura","neil-friends","couple",0],
+  ["John + Sharon Quinn","neil-family","couple",1],
+  ["Paul + Mary Quinn","neil-family","couple",0],
+  ["Mark + Charmaine Quinn","neil-family","couple",0],
+  ["Aodhan Callan","joint-friends","single",0],
+  ["Michael Twohig","joint-friends","single",0],
+  ["Luke Guinane","joint-friends","single",1],
+  ["Martin + Wife Quinn","neil-family","couple",1],
+  ["Mary Hutchinson","neil-family","single",0],
+  ["Stephen Hutchinson","neil-family","single",0],
+  ["Paul + Dolores Hutchinson","neil-family","couple",0],
+  ["Phillis + Pete Hutchinson","neil-family","couple",1],
+  ["Karen + Michael","joint-friends","couple",0],
+  ["Jake Connolly","joint-friends","single",1],
+  ["Padraig Walsh","joint-friends","single",0],
+  ["Amy Strilciw","neil-family","single",0],
+  ["Lewis Strilciw","neil-family","single",0]
+].map(([name,group,party,maybe])=>({id:uid(),name,group,invited:true,party,maybe:!!maybe,notes:''}));
 
+const ADDITIONS = [
+  ["Sean Quinn","neil-family","single",0],
+  ["Orla Quinn","neil-family","single",0],
+  ["Eoin Quinn","neil-family","single",0],
+  ["Amy Hutchinson","neil-family","single",0],
+  ["Laura Hutchinson","neil-family","single",0],
+  ["Lauren Hutchinson","neil-family","single",0],
+  ["Hannah Hutchinson","neil-family","single",0],
+  ["Gerard Hutchinson","neil-family","single",0],
+  ["Megan Hutchinson","neil-family","single",0],
+  ["John Hutchinson","neil-family","single",0],
+  ["Sarah Hutchinson","neil-family","single",0],
+  ["Rachel Hutchinson","neil-family","single",0],
+  ["Tara Hutchinson","neil-family","single",0],
+  ["Glen Hutchinson","neil-family","single",0],
+  ["Roy Hutchinson","neil-family","single",0],
+  ["Coran Quinn","kids","single",0],
+  ["Rian Quinn","kids","single",0],
+  ["David Quinn","kids","single",0],
+  ["Nio","kids","single",0],
+  ["Rosie","kids","single",0],
+  ["Sammy","kids","single",0],
+  ["Fionn","kids","single",0],
+  ["Feidhlam","kids","single",0],
+  ["Fodla","kids","single",0],
+  ["Mark Doran","neil-friends","single",0],
+  ["Ross Finn","neil-friends","single",0],
+  ["Anita O'Brien","neil-friends","single",0],
+  ["Jess Liddy","neil-friends","single",0],
+  ["Laura Hartnett","neil-friends","single",0],
+  ["Sean Greaney","neil-friends","single",0],
+  ["Tom O'Shea","neil-friends","single",0],
+  ["Francisco DeMolina","neil-friends","single",0],
+  ["Brian Sweeney","neil-friends","single",0],
+  ["Richard Anslow","neil-friends","single",0],
+  ["Paul Noonan","neil-friends","single",0],
+  ["Daniella (Skiing)","joint-friends","single",0],
+  ["Rikki (Skiing)","joint-friends","single",0],
+  ["Andrea (Skiing)","joint-friends","single",0],
+  ["George Quinlan","neil-friends","single",0],
+  ["Declan McGivern","joint-friends","plus1",1],
+  ["Modestas","joint-friends","single",0]
+].map(([name,group,party,invited])=>({id:uid(),name,group,invited:!!invited,party,maybe:false,notes:''}));
 let state = load();
 let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 
+function mergeAdditions(guests){
+  const have = new Set(guests.map(g=>g.name.trim().toLowerCase()));
+  return guests.concat(ADDITIONS.filter(a=>!have.has(a.name.toLowerCase())));
+}
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
     if(s && Array.isArray(s.guests)){
-      // one-time add for browsers that already saved the list before Rachel & Tony were added
-      if(!s.guests.some(g=>/^rachel\s*(&|\+|and)\s*tony$/i.test(g.name.trim())) && !s.addedRachelTony){
-        s.guests.push({id:uid(),name:'Rachel & Tony',group:'joint-friends',invited:true,party:'couple',notes:''});
-      }
+      let guests = s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'});
+      if(!s.mergedBatch1) guests = mergeAdditions(guests);   // one-time: add names that aren't already there
+      return {guests, target:s.target||0, mergedBatch1:true};
     }
-    if(s && Array.isArray(s.guests)) return {addedRachelTony:true, guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
   }catch(e){}
-  return {guests:DEFAULTS, target:0};
+  return {guests:DEFAULTS.concat(ADDITIONS), target:0, mergedBatch1:true};
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -502,29 +563,29 @@ function renderSummary(){
 }
 
 /* ---------- view ---------- */
-function renderView(){
-  const showNot = $('showNot').checked;
+function renderView(out){
   const t = stats(state.guests);
-  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.maybe?` \u00B7 ${t.maybePeople} of them maybes`:'') + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
+  $('viewTotals').innerHTML = out
+    ? `<b>${t.notInvited}</b> not attending`
+    : `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.maybe?` \u00B7 ${t.maybePeople} of them maybes`:'');
+  const tags = x => `${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.maybe?'<span class="tag maybe">maybe</span>':''}`;
   const cards = GROUPS.map(g=>{
-    const list = state.guests.filter(x=>x.group===g.id && (showNot || x.invited));
+    const list = state.guests.filter(x=>x.group===g.id && x.invited===!out);
     if(!list.length) return '';
     const s = stats(state.guests.filter(x=>x.group===g.id));
-    return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${s.head} attending</span></h2><ul>${
-      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.maybe?'<span class="tag maybe">maybe</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
+    return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${out ? list.length+' not attending' : s.head+' attending'}</span></h2><ul>${
+      list.map(x=>`<li><span class="nm">${esc(x.name)}</span>${tags(x)}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
     }</ul></section>`;
   }).join('');
-  $('viewGrid').innerHTML = cards || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
+  $('viewGrid').innerHTML = cards || `<div class="card empty" style="grid-column:1/-1">${out?'Nobody is marked as not attending.':'No guests yet. Add some on the Edit page.'}</div>`;
 }
-$('showNot').addEventListener('change', renderView);
 
 /* ---------- events ---------- */
 function show(view){
-  ['view','list','summary'].forEach(v=>{
-    $('view-'+v).hidden = v!==view;
-    $('tab-'+v).setAttribute('aria-selected', v===view);
-  });
-  if(view==='summary') renderSummary(); else if(view==='view') renderView(); else renderList();
+  const main = view==='out' ? 'view' : view;
+  ['view','list','summary'].forEach(v=>{ $('view-'+v).hidden = v!==main; });
+  ['view','out','list','summary'].forEach(v=>$('tab-'+v).setAttribute('aria-selected', v===view));
+  if(view==='summary') renderSummary(); else if(view==='view'||view==='out') renderView(view==='out'); else renderList();
   if(location.hash!=='#'+view) history.replaceState(null,'','#'+view);
 }
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
@@ -580,9 +641,26 @@ $('empty').addEventListener('click', e=>{
 });
 
 $('exportBtn').onclick = () => {
+  $('csvText').value = toCSV(); $('csvMsg').textContent = '';
+  $('csvShare').hidden = !navigator.share;
+  $('csvDialog').showModal();
+};
+$('csvClose').onclick = () => $('csvDialog').close();
+$('csvCopy').onclick = async () => {
+  const t = $('csvText'); let ok = false;
+  try{ await navigator.clipboard.writeText(t.value); ok = true; }catch(e){}
+  if(!ok){ t.focus(); t.select(); t.setSelectionRange(0, t.value.length); try{ ok = document.execCommand('copy'); }catch(e){} }
+  $('csvMsg').textContent = ok ? 'Copied to clipboard.' : 'Could not copy automatically \u2014 the text is selected, so use your device\u2019s Copy.';
+};
+$('csvShare').onclick = async () => {
+  try{ await navigator.share({title:'Neil & Jen guest list', text:$('csvText').value}); }catch(e){}
+};
+$('csvDownload').onclick = () => {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([toCSV()],{type:'text/csv'}));
-  a.download = 'neil-jen-guest-list.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([$('csvText').value],{type:'text/csv'}));
+  a.download = 'neil-jen-guest-list.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  $('csvMsg').textContent = 'If nothing downloaded, use Copy instead.';
 };
 $('importFile').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -592,7 +670,7 @@ $('importFile').addEventListener('change', async e=>{
 });
 
 initControls();
-show(['#summary','#list'].includes(location.hash) ? location.hash.slice(1) : 'view');
+show(['#summary','#list','#out'].includes(location.hash) ? location.hash.slice(1) : 'view');
 </script>
 </body>
 </html>
