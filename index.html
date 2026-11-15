@@ -58,6 +58,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .gsel{border-left-width:6px;border-radius:8px}
 .pill{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;min-width:92px}
 .pill[aria-checked=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+.pill.maybe{min-width:78px}
+.pill.maybe[aria-checked=true]{background:var(--jen-friends);border-color:var(--jen-friends);color:#2b2622}
 .party{border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
 .party-plus1{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .party-couple{background:var(--neil-family);color:#fff;border-color:var(--neil-family)}
@@ -108,6 +110,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
 .vcard li.off .nm{color:var(--muted);text-decoration:line-through}
 .tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--accent);color:var(--accent-ink)}
 .tag.couple{background:var(--neil-family)}
+.tag.maybe{background:var(--jen-friends);color:#2b2622}
 .tag.off{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:2px 0 10px}
 </style>
@@ -156,6 +159,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
           <option value="all">All statuses</option>
           <option value="invited">Invited</option>
           <option value="not">Not invited</option>
+          <option value="maybe">Maybe</option>
           <option value="single">Single</option>
           <option value="plus1">+1</option>
           <option value="couple">Couple</option>
@@ -173,6 +177,7 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
           <th><button data-sort="group">Group <span data-arrow="group"></span></button></th>
           <th><button data-sort="invited">Invited <span data-arrow="invited"></span></button></th>
           <th><button data-sort="party">Party <span data-arrow="party"></span></button></th>
+          <th><button data-sort="maybe">Maybe <span data-arrow="maybe"></span></button></th>
           <th>Notes</th>
           <th><span class="sr" style="position:absolute;left:-9999px">Delete</span></th>
         </tr></thead>
@@ -241,6 +246,7 @@ const DEFAULTS = [
   ["Skin + Shannon","neil-friends","couple"],
   ["Sean Doyle","joint-friends","single"],
   ["Shane + Ailise","joint-friends","couple"],
+  ["Rachel & Tony","joint-friends","couple"],
   ["James + Laura","neil-friends","couple"],
   ["John + Sharon Quinn","neil-family","couple"],
   ["Paul + Mary Quinn","neil-family","couple"],
@@ -266,7 +272,13 @@ let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.guests)) return {guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
+    if(s && Array.isArray(s.guests)){
+      // one-time add for browsers that already saved the list before Rachel & Tony were added
+      if(!s.guests.some(g=>/^rachel\s*(&|\+|and)\s*tony$/i.test(g.name.trim())) && !s.addedRachelTony){
+        s.guests.push({id:uid(),name:'Rachel & Tony',group:'joint-friends',invited:true,party:'couple',notes:''});
+      }
+    }
+    if(s && Array.isArray(s.guests)) return {addedRachelTony:true, guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
   }catch(e){}
   return {guests:DEFAULTS, target:0};
 }
@@ -277,9 +289,9 @@ const $ = id => document.getElementById(id);
 
 /* ---------- stats ---------- */
 function stats(guests){
-  const s = {listed:guests.length, invited:0, single:0, plus1:0, couple:0, notInvited:0, notInvitedExtra:0};
+  const s = {listed:guests.length, invited:0, single:0, plus1:0, couple:0, notInvited:0, notInvitedExtra:0, maybe:0, maybePeople:0};
   for(const g of guests){
-    if(g.invited){ s.invited++; s[g.party]++; }
+    if(g.invited){ s.invited++; s[g.party]++; if(g.maybe){ s.maybe++; s.maybePeople += g.party==='single'?1:2; } }
     else { s.notInvited++; if(g.party!=='single') s.notInvitedExtra++; }
   }
   s.extra = s.plus1 + s.couple;
@@ -301,13 +313,14 @@ function visibleGuests(){
     if(ui.group && g.group!==ui.group) return false;
     if(ui.status==='invited' && !g.invited) return false;
     if(ui.status==='not' && g.invited) return false;
+    if(ui.status==='maybe' && !g.maybe) return false;
     if(['single','plus1','couple'].includes(ui.status) && g.party!==ui.status) return false;
     if(q && !(g.name.toLowerCase().includes(q) || (g.notes||'').toLowerCase().includes(q))) return false;
     return true;
   });
   if(ui.sort){
     const k = ui.sort;
-    const val = g => k==='name' ? g.name.toLowerCase() : k==='group' ? GROUPS.findIndex(x=>x.id===g.group) : k==='party' ? Object.keys(PARTY).indexOf(g.party) : +!!g[k];
+    const val = g => k==='maybe' ? +!!g.maybe : k==='name' ? g.name.toLowerCase() : k==='group' ? GROUPS.findIndex(x=>x.id===g.group) : k==='party' ? Object.keys(PARTY).indexOf(g.party) : +!!g[k];
     rows = rows.slice().sort((a,b)=>{ const x=val(a), y=val(b); return (x<y?-1:x>y?1:0)*ui.dir; });
   }
   return rows;
@@ -322,6 +335,7 @@ function renderList(){
         ${GROUPS.map(x=>`<option value="${x.id}"${x.id===g.group?' selected':''}>${x.label}</option>`).join('')}</select></td>
       <td><button class="pill" role="switch" aria-checked="${g.invited}" data-t="invited">${g.invited?'Invited':'Not invited'}</button></td>
       <td><select class="party party-${g.party}" data-f="party" aria-label="Single, +1 or couple">${Object.entries(PARTY).map(([k,v])=>`<option value="${k}"${k===g.party?' selected':''}>${v}</option>`).join('')}</select></td>
+      <td><button class="pill maybe" role="switch" aria-checked="${!!g.maybe}" data-t="maybe">${g.maybe?'Maybe':'Maybe?'}</button></td>
       <td><input class="cell-input" data-f="notes" value="${esc(g.notes)}" placeholder="Notes" aria-label="Notes" style="min-width:160px"></td>
       <td><button class="del" data-del title="Remove guest" aria-label="Remove ${esc(g.name)}">&times;</button></td>
     </tr>`).join('');
@@ -359,8 +373,8 @@ function addGuests(names, group, party='single'){
 /* ---------- CSV ---------- */
 function toCSV(){
   const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
-  const lines = [['Name','Group','Invited','Party','Notes'].map(q).join(',')];
-  state.guests.forEach(g=>lines.push([g.name,G[g.group].label,g.invited?'yes':'no',PARTY[g.party],g.notes].map(q).join(',')));
+  const lines = [['Name','Group','Invited','Party','Maybe','Notes'].map(q).join(',')];
+  state.guests.forEach(g=>lines.push([g.name,G[g.group].label,g.invited?'yes':'no',PARTY[g.party],g.maybe?'yes':'no',g.notes].map(q).join(',')));
   return lines.join('\n');
 }
 function parseCSV(text){
@@ -383,7 +397,7 @@ function importCSV(text){
   const head = rows[0].map(h=>h.trim().toLowerCase());
   const hasHead = head.includes('name');
   const idx = n => hasHead ? head.indexOf(n) : -1;
-  const [iN,iG,iI,iP,iNo] = hasHead ? [idx('name'),idx('group'),idx('invited'),Math.max(idx('party'),idx('plus one')),idx('notes')] : [0,1,2,3,4];
+  const [iN,iG,iI,iP,iNo,iM] = hasHead ? [idx('name'),idx('group'),idx('invited'),Math.max(idx('party'),idx('plus one')),idx('notes'),idx('maybe')] : [0,1,2,3,4,-1];
   const yes = v => /^(y|yes|true|1|x)$/i.test((v||'').trim());
   const groupOf = v => {
     const t=(v||'').trim().toLowerCase().replace(/[\s_]+/g,'-');
@@ -399,7 +413,7 @@ function importCSV(text){
   let n=0;
   for(const r of rows.slice(hasHead?1:0)){
     const name=(r[iN]||'').trim(); if(!name) continue;
-    state.guests.push({id:uid(), name, group:groupOf(r[iG]), invited:iI<0?true:yes(r[iI]), party:partyOf(r[iP], name), notes:(r[iNo]||'').trim()});
+    state.guests.push({id:uid(), name, group:groupOf(r[iG]), invited:iI<0?true:yes(r[iI]), party:partyOf(r[iP], name), maybe:iM>=0&&yes(r[iM]), notes:(r[iNo]||'').trim()});
     n++;
   }
   save(); renderList(); return n;
@@ -441,7 +455,8 @@ function renderSummary(){
   const target = +state.target || 0;
   const over = target && t.head > target;
   const prog = target ? Math.min(100, t.head/target*100) : 0;
-  const diff = target ? (over ? `Over by ${t.head-target}` : `${target-t.head} spots left`) : 'Set a target to track';
+  const maybeNote = t.maybe ? ` \u00B7 incl. ${t.maybePeople} maybe` : '';
+  const diff = (target ? (over ? `Over by ${t.head-target}` : `${target-t.head} spots left`) : 'Set a target to track') + maybeNote;
 
   const sides = [
     {id:'jen',label:'Jen’s side', color:col('jen'), groups:['jen-family','jen-friends']},
@@ -490,13 +505,13 @@ function renderSummary(){
 function renderView(){
   const showNot = $('showNot').checked;
   const t = stats(state.guests);
-  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
+  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.maybe?` \u00B7 ${t.maybePeople} of them maybes`:'') + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
   const cards = GROUPS.map(g=>{
     const list = state.guests.filter(x=>x.group===g.id && (showNot || x.invited));
     if(!list.length) return '';
     const s = stats(state.guests.filter(x=>x.group===g.id));
     return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${s.head} attending</span></h2><ul>${
-      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
+      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.maybe?'<span class="tag maybe">maybe</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
     }</ul></section>`;
   }).join('');
   $('viewGrid').innerHTML = cards || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
