@@ -111,7 +111,14 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
 .tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--accent);color:var(--accent-ink)}
 .tag.couple{background:var(--neil-family)}
 .tag.maybe{background:var(--jen-friends);color:#2b2622}
+.vcard.notatt{border-top-color:var(--muted)}
+.vcard.notatt ul{columns:3 230px;column-gap:28px}
+.vcard.notatt li{break-inside:avoid}
+.vcard.notatt .gl{font-size:12px;margin-left:auto}
 .tag.off{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:18px;width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+#csvText{width:100%;height:240px;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre}
 .note{font-size:13px;color:var(--muted);margin:2px 0 10px}
 </style>
 </head>
@@ -126,12 +133,26 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
     </nav>
   </header>
 
+  <dialog id="csvDialog">
+    <h2 style="margin:0 0 6px">Export CSV</h2>
+    <p class="note">Copy this text, or download it as a file. Some in-app browsers (Messenger, Instagram) block downloads &mdash; use Copy or Share there.</p>
+    <textarea id="csvText" readonly></textarea>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn primary" id="csvCopy">Copy</button>
+      <button class="btn" id="csvShare" hidden>Share</button>
+      <button class="btn" id="csvDownload">Download</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="csvClose">Close</button>
+    </div>
+    <p class="note" id="csvMsg" style="margin:8px 0 0"></p>
+  </dialog>
+
   <!-- VIEW -->
   <main id="view-view">
     <div class="toolbar" style="margin-bottom:14px">
       <span class="muted" id="viewTotals"></span>
       <span style="flex:1"></span>
-      <label><input type="checkbox" id="showNot" checked> Show not invited</label>
+      <label><input type="checkbox" id="showNot" checked> Show not attending</label>
     </div>
     <div class="vgrid" id="viewGrid"></div>
   </main>
@@ -265,15 +286,66 @@ const DEFAULTS = [
   ["Lewis Strilciw","neil-family","single",0]
 ].map(([name,group,party,maybe])=>({id:uid(),name,group,invited:true,party,maybe:!!maybe,notes:''}));
 
+const ADDITIONS = [
+  ["Sean Quinn","neil-family","single",0],
+  ["Orla Quinn","neil-family","single",0],
+  ["Eoin Quinn","neil-family","single",0],
+  ["Amy Hutchinson","neil-family","single",0],
+  ["Laura Hutchinson","neil-family","single",0],
+  ["Lauren Hutchinson","neil-family","single",0],
+  ["Hannah Hutchinson","neil-family","single",0],
+  ["Gerard Hutchinson","neil-family","single",0],
+  ["Megan Hutchinson","neil-family","single",0],
+  ["John Hutchinson","neil-family","single",0],
+  ["Sarah Hutchinson","neil-family","single",0],
+  ["Rachel Hutchinson","neil-family","single",0],
+  ["Tara Hutchinson","neil-family","single",0],
+  ["Glen Hutchinson","neil-family","single",0],
+  ["Roy Hutchinson","neil-family","single",0],
+  ["Coran Quinn","kids","single",0],
+  ["Rian Quinn","kids","single",0],
+  ["David Quinn","kids","single",0],
+  ["Nio","kids","single",0],
+  ["Rosie","kids","single",0],
+  ["Sammy","kids","single",0],
+  ["Fionn","kids","single",0],
+  ["Feidhlam","kids","single",0],
+  ["Fodla","kids","single",0],
+  ["Mark Doran","neil-friends","single",0],
+  ["Ross Finn","neil-friends","single",0],
+  ["Anita O'Brien","neil-friends","single",0],
+  ["Jess Liddy","neil-friends","single",0],
+  ["Laura Hartnett","neil-friends","single",0],
+  ["Sean Greaney","neil-friends","single",0],
+  ["Tom O'Shea","neil-friends","single",0],
+  ["Francisco DeMolina","neil-friends","single",0],
+  ["Brian Sweeney","neil-friends","single",0],
+  ["Richard Anslow","neil-friends","single",0],
+  ["Paul Noonan","neil-friends","single",0],
+  ["Daniella (Skiing)","joint-friends","single",0],
+  ["Rikki (Skiing)","joint-friends","single",0],
+  ["Andrea (Skiing)","joint-friends","single",0],
+  ["George Quinlan","neil-friends","single",0],
+  ["Declan McGivern","joint-friends","plus1",1],
+  ["Modestas","joint-friends","single",0]
+].map(([name,group,party,invited])=>({id:uid(),name,group,invited:!!invited,party,maybe:false,notes:''}));
 let state = load();
 let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 
+function mergeAdditions(guests){
+  const have = new Set(guests.map(g=>g.name.trim().toLowerCase()));
+  return guests.concat(ADDITIONS.filter(a=>!have.has(a.name.toLowerCase())));
+}
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.guests)) return {guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
+    if(s && Array.isArray(s.guests)){
+      let guests = s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'});
+      if(!s.mergedBatch1) guests = mergeAdditions(guests);   // one-time: add names that aren't already there
+      return {guests, target:s.target||0, mergedBatch1:true};
+    }
   }catch(e){}
-  return {guests:DEFAULTS, target:0};
+  return {guests:DEFAULTS.concat(ADDITIONS), target:0, mergedBatch1:true};
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -498,16 +570,21 @@ function renderSummary(){
 function renderView(){
   const showNot = $('showNot').checked;
   const t = stats(state.guests);
-  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.maybe?` \u00B7 ${t.maybePeople} of them maybes`:'') + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
+  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invitations)` + (t.maybe?` \u00B7 ${t.maybePeople} of them maybes`:'') + (t.notInvited?` \u00B7 ${t.notInvited} not attending`:'');
+  const tags = x => `${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.maybe?'<span class="tag maybe">maybe</span>':''}`;
   const cards = GROUPS.map(g=>{
-    const list = state.guests.filter(x=>x.group===g.id && (showNot || x.invited));
+    const list = state.guests.filter(x=>x.group===g.id && x.invited);
     if(!list.length) return '';
     const s = stats(state.guests.filter(x=>x.group===g.id));
     return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${s.head} attending</span></h2><ul>${
-      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.party==='plus1'?'<span class="tag">+1</span>':x.party==='couple'?'<span class="tag couple">couple</span>':''}${x.maybe?'<span class="tag maybe">maybe</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
+      list.map(x=>`<li><span class="nm">${esc(x.name)}</span>${tags(x)}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
     }</ul></section>`;
   }).join('');
-  $('viewGrid').innerHTML = cards || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
+  const out = state.guests.filter(x=>!x.invited);
+  const notAtt = showNot && out.length ? `<section class="vcard notatt" style="grid-column:1/-1"><h2>Not attending<span>${out.length} ${out.length===1?'person':'people'}</span></h2><ul>${
+    out.map(x=>`<li><span class="dot" style="background:${col(x.group)}" title="${G[x.group].label}"></span><span class="nm">${esc(x.name)}</span>${tags(x)}<span class="muted gl">${G[x.group].label}</span></li>`).join('')
+  }</ul></section>` : '';
+  $('viewGrid').innerHTML = (cards + notAtt) || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
 }
 $('showNot').addEventListener('change', renderView);
 
@@ -573,9 +650,26 @@ $('empty').addEventListener('click', e=>{
 });
 
 $('exportBtn').onclick = () => {
+  $('csvText').value = toCSV(); $('csvMsg').textContent = '';
+  $('csvShare').hidden = !navigator.share;
+  $('csvDialog').showModal();
+};
+$('csvClose').onclick = () => $('csvDialog').close();
+$('csvCopy').onclick = async () => {
+  const t = $('csvText'); let ok = false;
+  try{ await navigator.clipboard.writeText(t.value); ok = true; }catch(e){}
+  if(!ok){ t.focus(); t.select(); t.setSelectionRange(0, t.value.length); try{ ok = document.execCommand('copy'); }catch(e){} }
+  $('csvMsg').textContent = ok ? 'Copied to clipboard.' : 'Could not copy automatically \u2014 the text is selected, so use your device\u2019s Copy.';
+};
+$('csvShare').onclick = async () => {
+  try{ await navigator.share({title:'Neil & Jen guest list', text:$('csvText').value}); }catch(e){}
+};
+$('csvDownload').onclick = () => {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([toCSV()],{type:'text/csv'}));
-  a.download = 'neil-jen-guest-list.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([$('csvText').value],{type:'text/csv'}));
+  a.download = 'neil-jen-guest-list.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  $('csvMsg').textContent = 'If nothing downloaded, use Copy instead.';
 };
 $('importFile').addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f) return;
