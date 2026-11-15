@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neil &amp; Jen Guest List</title>
+<style>
+:root{
+  --bg:#faf7f2; --surface:#ffffff; --ink:#2b2622; --muted:#75695f; --line:#e6dfd5;
+  --accent:#8a5a44; --accent-ink:#ffffff; --soft:#f3ede4; --danger:#b3392f; --ok:#2f7d52;
+  --jen-family:#c2577a; --neil-family:#3b6f9a; --joint-friends:#7b5ea7; --neil-friends:#3f9a8b; --jen-friends:#d58a2f;
+  --jen:#c2577a; --neil:#3b6f9a; --joint:#7b5ea7; --family:#a8674a; --friends:#5a8a6a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1b1815; --surface:#26221e; --ink:#f1ebe3; --muted:#a89d92; --line:#3a342e;
+    --accent:#d9a487; --accent-ink:#1b1815; --soft:#2f2a25; --danger:#ef7d72; --ok:#6cc08f;
+    --jen-family:#e0799a; --neil-family:#6a9fc9; --joint-friends:#a58bd1; --neil-friends:#62bfae; --jen-friends:#eeaa5a;
+    --jen:#e0799a; --neil:#6a9fc9; --joint:#a58bd1; --family:#d49474; --friends:#82b896;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 56px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font:600 28px/1.1 Georgia,"Times New Roman",serif;margin:0;letter-spacing:.2px}
+h1 small{display:block;font:500 12px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+h2{font-size:15px;margin:0 0 4px;font-weight:600}
+nav{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:999px}
+nav button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer}
+nav button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.muted{color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+input[type=text],input[type=search],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .grow{flex:1 1 180px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--soft);font-weight:600}
+th button{all:unset;cursor:pointer}
+th button:hover{color:var(--ink)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.cell-input{width:100%;border-color:transparent;background:transparent}
+.cell-input:hover,.cell-input:focus{border-color:var(--line);background:var(--surface)}
+.gsel{border-left-width:6px;border-radius:8px}
+.pill{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;min-width:92px}
+.pill[aria-checked=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+.pill.plus{min-width:72px}
+.pill.plus[aria-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.del{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;border-radius:6px}
+.del:hover{color:var(--danger);background:var(--soft)}
+.row-off td:not(:last-child) .cell-input{color:var(--muted)}
+.addrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.addrow input[type=text]{flex:1 1 180px}
+.foot{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:13px;color:var(--muted)}
+.foot b{color:var(--ink)}
+.empty{padding:34px 16px;text-align:center;color:var(--muted)}
+details summary{cursor:pointer;color:var(--muted);font-size:13px;margin-top:10px}
+details textarea{width:100%;min-height:90px;margin:8px 0}
+
+/* summary */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.kpi .value{font:600 34px/1.15 Georgia,serif;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:13px;color:var(--muted)}
+.meter{height:8px;border-radius:99px;background:var(--soft);overflow:hidden;margin:8px 0 4px}
+.meter i{display:block;height:100%;background:var(--ok);border-radius:99px}
+.meter.over i{background:var(--danger)}
+.target{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+.target input{width:84px}
+.share{display:flex;height:30px;border-radius:8px;overflow:hidden;margin:12px 0 8px;background:var(--soft)}
+.share span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;min-width:0;overflow:hidden}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:10px;border-radius:2px;display:inline-block}
+.sw.plusone{background:repeating-linear-gradient(45deg,var(--muted) 0 3px,transparent 3px 6px);border:1px solid var(--muted)}
+.sw.guest{background:var(--muted)}
+.sw.off{border:1.5px dashed var(--muted)}
+.lens td.bar{width:34%;min-width:150px}
+.stack{display:flex;height:16px;gap:2px}
+.stack i{display:block;height:100%;min-width:0}
+.stack .g{border-radius:3px}
+.stack .p{border-radius:3px;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}
+.stack .o{border-radius:3px;border:1.5px dashed currentColor;background:transparent;opacity:.8}
+.lens tr.total td{font-weight:700;background:var(--soft)}
+.note{font-size:13px;color:var(--muted);margin:2px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><small>Wedding planning</small>Neil &amp; Jen &mdash; Guest List</h1>
+    <nav role="tablist" aria-label="Pages">
+      <button role="tab" id="tab-list" aria-selected="true" data-view="list">Guest list</button>
+      <button role="tab" id="tab-summary" aria-selected="false" data-view="summary">Summary</button>
+    </nav>
+  </header>
+
+  <!-- GUEST LIST -->
+  <main id="view-list">
+    <div class="card">
+      <div class="addrow">
+        <input type="text" id="addName" placeholder="Add a guest&hellip; (press Enter)" aria-label="Guest name" autocomplete="off">
+        <select id="addGroup" aria-label="Group"></select>
+        <label><input type="checkbox" id="addPlus"> +1</label>
+        <button class="btn primary" id="addBtn">Add</button>
+      </div>
+      <details>
+        <summary>Bulk add (one name per line)</summary>
+        <textarea id="bulkText" placeholder="Aunt Mary&#10;Cousin Joe&#10;..."></textarea>
+        <button class="btn" id="bulkBtn">Add all to selected group</button>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="q" class="grow" placeholder="Search names or notes" aria-label="Search">
+        <select id="statusFilter" aria-label="Filter by status">
+          <option value="all">All statuses</option>
+          <option value="invited">Invited</option>
+          <option value="not">Not invited</option>
+          <option value="plus">Has +1</option>
+          <option value="noplus">No +1</option>
+        </select>
+        <button class="btn" id="exportBtn">Export CSV</button>
+        <label class="btn" style="cursor:pointer">Import CSV<input type="file" id="importFile" accept=".csv,text/csv" hidden></label>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Filter by group"></div>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th><button data-sort="name">Name <span data-arrow="name"></span></button></th>
+          <th><button data-sort="group">Group <span data-arrow="group"></span></button></th>
+          <th><button data-sort="invited">Invited <span data-arrow="invited"></span></button></th>
+          <th><button data-sort="plus">+1 <span data-arrow="plus"></span></button></th>
+          <th>Notes</th>
+          <th><span class="sr" style="position:absolute;left:-9999px">Delete</span></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+    </div>
+    <div class="foot" id="foot"></div>
+    <p class="muted" style="font-size:12px;margin-top:18px">Saved automatically in this browser. Use Export CSV to back up or share the list.</p>
+  </main>
+
+  <!-- SUMMARY -->
+  <main id="view-summary" hidden>
+    <div id="summary"></div>
+  </main>
+</div>
+
+<script>
+const GROUPS = [
+  {id:'jen-family',    label:'Jen family',     side:'jen',   type:'family'},
+  {id:'neil-family',   label:'Neil family',    side:'neil',  type:'family'},
+  {id:'joint-friends', label:'Joint friends',  side:'joint', type:'friends'},
+  {id:'neil-friends',  label:'Neil friends',   side:'neil',  type:'friends'},
+  {id:'jen-friends',   label:'Jen friends',    side:'jen',   type:'friends'},
+];
+const G = Object.fromEntries(GROUPS.map(g=>[g.id,g]));
+const col = id => `var(--${id})`;
+const KEY = 'neil-jen-guestlist-v1';
+
+let state = load();
+let ui = {q:'', status:'all', group:null, sort:null, dir:1};
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(s && Array.isArray(s.guests)) return {guests:s.guests, target:s.target||0};
+  }catch(e){}
+  return {guests:[], target:0};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+
+/* ---------- stats ---------- */
+function stats(guests){
+  const s = {listed:guests.length, invited:0, plus:0, notInvited:0, notInvitedPlus:0};
+  for(const g of guests){
+    if(g.invited){ s.invited++; if(g.plus) s.plus++; }
+    else { s.notInvited++; if(g.plus) s.notInvitedPlus++; }
+  }
+  s.head = s.invited + s.plus;
+  return s;
+}
+const forGroups = ids => stats(state.guests.filter(g=>ids.includes(g.group)));
+
+/* ---------- guest list ---------- */
+function initControls(){
+  $('addGroup').innerHTML = GROUPS.map(g=>`<option value="${g.id}">${g.label}</option>`).join('');
+  $('chips').innerHTML = GROUPS.map(g=>`<button class="chip" data-g="${g.id}" aria-pressed="false"><span class="dot" style="background:${col(g.id)}"></span>${g.label} <span class="muted" data-count="${g.id}"></span></button>`).join('');
+}
+
+function visibleGuests(){
+  const q = ui.q.trim().toLowerCase();
+  let rows = state.guests.filter(g=>{
+    if(ui.group && g.group!==ui.group) return false;
+    if(ui.status==='invited' && !g.invited) return false;
+    if(ui.status==='not' && g.invited) return false;
+    if(ui.status==='plus' && !g.plus) return false;
+    if(ui.status==='noplus' && g.plus) return false;
+    if(q && !(g.name.toLowerCase().includes(q) || (g.notes||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(ui.sort){
+    const k = ui.sort;
+    const val = g => k==='name' ? g.name.toLowerCase() : k==='group' ? GROUPS.findIndex(x=>x.id===g.group) : +!!g[k];
+    rows = rows.slice().sort((a,b)=>{ const x=val(a), y=val(b); return (x<y?-1:x>y?1:0)*ui.dir; });
+  }
+  return rows;
+}
+
+function renderList(){
+  const rows = visibleGuests();
+  $('rows').innerHTML = rows.map(g=>`
+    <tr data-id="${g.id}" class="${g.invited?'':'row-off'}">
+      <td><input class="cell-input" data-f="name" value="${esc(g.name)}" aria-label="Name" style="min-width:150px"></td>
+      <td><select class="gsel" data-f="group" aria-label="Group" style="border-left-color:${col(g.group)}">
+        ${GROUPS.map(x=>`<option value="${x.id}"${x.id===g.group?' selected':''}>${x.label}</option>`).join('')}</select></td>
+      <td><button class="pill" role="switch" aria-checked="${g.invited}" data-t="invited">${g.invited?'Invited':'Not invited'}</button></td>
+      <td><button class="pill plus" role="switch" aria-checked="${g.plus}" data-t="plus">${g.plus?'+1':'No +1'}</button></td>
+      <td><input class="cell-input" data-f="notes" value="${esc(g.notes)}" placeholder="Notes" aria-label="Notes" style="min-width:160px"></td>
+      <td><button class="del" data-del title="Remove guest" aria-label="Remove ${esc(g.name)}">&times;</button></td>
+    </tr>`).join('');
+
+  const empty = $('empty');
+  if(!state.guests.length){
+    empty.hidden = false;
+    empty.innerHTML = `No guests yet. Add some above, or <button class="btn" id="sampleBtn">load sample guests</button> to see how it works.`;
+  } else if(!rows.length){
+    empty.hidden = false; empty.textContent = 'No guests match these filters.';
+  } else empty.hidden = true;
+
+  document.querySelectorAll('#chips .chip').forEach(c=>{
+    c.setAttribute('aria-pressed', ui.group===c.dataset.g);
+    c.querySelector('[data-count]').textContent = state.guests.filter(g=>g.group===c.dataset.g).length;
+  });
+  document.querySelectorAll('[data-arrow]').forEach(a=>{
+    a.textContent = ui.sort===a.dataset.arrow ? (ui.dir>0?'▲':'▼') : '';
+  });
+  renderFoot();
+}
+
+function renderFoot(){
+  const s = stats(state.guests);
+  $('foot').innerHTML = `<span><b>${s.listed}</b> on the list</span><span><b>${s.invited}</b> invited</span><span><b>${s.plus}</b> plus-ones</span><span>Headcount <b>${s.head}</b></span><span><b>${s.notInvited}</b> not invited</span>`;
+}
+
+function addGuests(names, group, plus=false){
+  const out = names.map(n=>n.trim()).filter(Boolean);
+  out.forEach(name=>state.guests.push({id:uid(), name, group, invited:true, plus, notes:''}));
+  if(out.length){ save(); renderList(); }
+  return out.length;
+}
+
+/* ---------- CSV ---------- */
+function toCSV(){
+  const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const lines = [['Name','Group','Invited','Plus one','Notes'].map(q).join(',')];
+  state.guests.forEach(g=>lines.push([g.name,G[g.group].label,g.invited?'yes':'no',g.plus?'yes':'no',g.notes].map(q).join(',')));
+  return lines.join('\n');
+}
+function parseCSV(text){
+  const rows=[]; let row=[], cur='', inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c;
+    } else if(c==='"') inQ=true;
+    else if(c===','){ row.push(cur); cur=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(cur); cur=''; if(row.some(x=>x.trim()))rows.push(row); row=[]; }
+    else cur+=c;
+  }
+  row.push(cur); if(row.some(x=>x.trim())) rows.push(row);
+  return rows;
+}
+function importCSV(text){
+  const rows = parseCSV(text);
+  if(!rows.length) return 0;
+  const head = rows[0].map(h=>h.trim().toLowerCase());
+  const hasHead = head.includes('name');
+  const idx = n => hasHead ? head.indexOf(n) : -1;
+  const [iN,iG,iI,iP,iNo] = hasHead ? [idx('name'),idx('group'),idx('invited'),idx('plus one'),idx('notes')] : [0,1,2,3,4];
+  const yes = v => /^(y|yes|true|1|x)$/i.test((v||'').trim());
+  const groupOf = v => {
+    const t=(v||'').trim().toLowerCase().replace(/[\s_]+/g,'-');
+    return (GROUPS.find(g=>g.id===t || g.label.toLowerCase().replace(/\s+/g,'-')===t)||GROUPS[2]).id;
+  };
+  let n=0;
+  for(const r of rows.slice(hasHead?1:0)){
+    const name=(r[iN]||'').trim(); if(!name) continue;
+    state.guests.push({id:uid(), name, group:groupOf(r[iG]), invited:iI<0?true:yes(r[iI]), plus:iP<0?false:yes(r[iP]), notes:(r[iNo]||'').trim()});
+    n++;
+  }
+  save(); renderList(); return n;
+}
+
+/* ---------- summary ---------- */
+const pct = (a,b) => b ? Math.round(a/b*100)+'%' : '–';
+
+function stackBar(s, color, max){
+  const w = n => max ? (n/max*100).toFixed(2)+'%' : '0%';
+  return `<div class="stack" style="color:${color}" aria-hidden="true">
+    <i class="g" style="width:${w(s.invited)};background:${color}"></i>
+    <i class="p" style="width:${w(s.plus)};background-color:${color}"></i>
+    <i class="o" style="width:${w(s.notInvited)}"></i></div>`;
+}
+
+function lens(title, note, defs){
+  const data = defs.map(d=>({...d, s:forGroups(d.groups)}));
+  const max = Math.max(1, ...data.map(d=>d.s.invited+d.s.plus+d.s.notInvited));
+  const tot = stats(state.guests);
+  const row = (label,color,s,cls='') => `<tr class="${cls}">
+      <td>${color?`<span class="dot" style="background:${color};margin-right:8px"></span>`:''}${label}</td>
+      <td class="num">${s.invited}</td><td class="num">${s.plus}</td><td class="num"><b>${s.head}</b></td>
+      <td class="num">${pct(s.head,tot.head)}</td><td class="num">${pct(s.plus,s.invited)}</td><td class="num">${s.notInvited}</td>
+      <td class="bar">${color?stackBar(s,color,max):''}</td></tr>`;
+  return `<section class="card lens"><h2>${title}</h2><p class="note">${note}</p>
+    <div class="tablewrap" style="border:0"><table>
+    <thead><tr><th></th><th class="num">Invited</th><th class="num">+1s</th><th class="num">Headcount</th><th class="num">Share</th><th class="num">+1 rate</th><th class="num">Not invited</th><th></th></tr></thead>
+    <tbody>${data.map(d=>row(d.label,d.color,d.s)).join('')}${row('Total','',tot,'total')}</tbody></table></div></section>`;
+}
+
+function renderSummary(){
+  const el = $('summary');
+  if(!state.guests.length){
+    el.innerHTML = `<div class="card empty">Nothing to summarize yet. Add guests on the Guest list page.</div>`;
+    return;
+  }
+  const t = stats(state.guests);
+  const target = +state.target || 0;
+  const over = target && t.head > target;
+  const prog = target ? Math.min(100, t.head/target*100) : 0;
+  const diff = target ? (over ? `Over by ${t.head-target}` : `${target-t.head} spots left`) : 'Set a target to track';
+
+  const sides = [
+    {id:'jen',label:'Jen’s side', color:col('jen'), groups:['jen-family','jen-friends']},
+    {id:'neil',label:'Neil’s side', color:col('neil'), groups:['neil-family','neil-friends']},
+    {id:'joint',label:'Joint', color:col('joint'), groups:['joint-friends']},
+  ];
+  const share = (defs) => defs.map(d=>({d, s:forGroups(d.groups)})).filter(x=>x.s.head>0)
+    .map(x=>`<span style="width:${t.head?x.s.head/t.head*100:0}%;background:${x.d.color}" title="${esc(x.d.label)}: ${x.s.head}">${x.s.head/t.head>.08?pct(x.s.head,t.head):''}</span>`).join('');
+
+  el.innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="label">Total headcount</div><div class="value">${t.head}</div>
+        ${target?`<div class="meter ${over?'over':''}"><i style="width:${prog}%"></i></div>`:''}
+        <div class="sub" style="${over?'color:var(--danger)':''}">${diff}</div>
+        <div class="target"><label for="targetIn">Target</label><input type="number" id="targetIn" min="0" value="${target||''}" placeholder="e.g. 120"></div></div>
+      <div class="kpi"><div class="label">Invited guests</div><div class="value">${t.invited}</div><div class="sub">of ${t.listed} on the list</div></div>
+      <div class="kpi"><div class="label">Plus-ones</div><div class="value">${t.plus}</div><div class="sub">${pct(t.plus,t.invited)} of invited guests</div></div>
+      <div class="kpi"><div class="label">Not invited</div><div class="value">${t.notInvited}</div><div class="sub">${t.notInvitedPlus?`+ up to ${t.notInvitedPlus} plus-ones if invited`:'on the maybe list'}</div></div>
+    </div>
+
+    <section class="card"><h2>Who&rsquo;s in the room</h2>
+      <p class="note">Share of total headcount (invited guests + their +1s).</p>
+      <div class="share" role="img" aria-label="Headcount share by side">${share(sides)}</div>
+      <div class="legend">${sides.map(d=>`<span><i class="sw" style="background:${d.color}"></i>${d.label} &middot; ${forGroups(d.groups).head}</span>`).join('')}</div>
+      <div class="share" role="img" aria-label="Headcount share by group">${share(GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}</div>
+      <div class="legend">${GROUPS.map(g=>`<span><i class="sw" style="background:${col(g.id)}"></i>${g.label} &middot; ${forGroups([g.id]).head}</span>`).join('')}</div>
+    </section>
+
+    <div class="legend" style="margin:0 2px 10px">
+      <span><i class="sw guest"></i>Invited guest</span><span><i class="sw plusone"></i>Plus-one</span><span><i class="sw off"></i>Not invited</span>
+    </div>
+
+    ${lens('By group','Each of your five guest groups.', GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}
+    ${lens('By side','Jen vs. Neil vs. shared friends.', sides)}
+    ${lens('Family vs. friends','Across both sides.', [
+      {label:'Family',color:col('family'),groups:['jen-family','neil-family']},
+      {label:'Friends',color:col('friends'),groups:['joint-friends','neil-friends','jen-friends']}])}
+    <p class="note">Headcount = invited guests + their +1s. Share is of total headcount. +1 rate = plus-ones &divide; invited guests.</p>`;
+
+  $('targetIn').addEventListener('change', e=>{ state.target = Math.max(0, +e.target.value||0); save(); renderSummary(); });
+}
+
+/* ---------- events ---------- */
+function show(view){
+  $('view-list').hidden = view!=='list';
+  $('view-summary').hidden = view!=='summary';
+  ['list','summary'].forEach(v=>$('tab-'+v).setAttribute('aria-selected', v===view));
+  if(view==='summary') renderSummary(); else renderList();
+  if(location.hash!=='#'+view) history.replaceState(null,'','#'+view);
+}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
+
+function doAdd(){
+  const name = $('addName').value;
+  if(!name.trim()) return;
+  addGuests([name], $('addGroup').value, $('addPlus').checked);
+  $('addName').value=''; $('addPlus').checked=false; $('addName').focus();
+}
+$('addBtn').onclick = doAdd;
+$('addName').addEventListener('keydown', e=>{ if(e.key==='Enter') doAdd(); });
+$('bulkBtn').onclick = () => { if(addGuests($('bulkText').value.split('\n'), $('addGroup').value)) $('bulkText').value=''; };
+
+$('q').addEventListener('input', e=>{ ui.q=e.target.value; renderList(); });
+$('statusFilter').addEventListener('change', e=>{ ui.status=e.target.value; renderList(); });
+$('chips').addEventListener('click', e=>{
+  const c=e.target.closest('.chip'); if(!c) return;
+  ui.group = ui.group===c.dataset.g ? null : c.dataset.g; renderList();
+});
+document.querySelector('thead').addEventListener('click', e=>{
+  const b=e.target.closest('[data-sort]'); if(!b) return;
+  const k=b.dataset.sort;
+  if(ui.sort===k){ if(ui.dir===1) ui.dir=-1; else {ui.sort=null; ui.dir=1;} } else { ui.sort=k; ui.dir=1; }
+  renderList();
+});
+
+const rowOf = el => state.guests.find(g=>g.id===el.closest('tr')?.dataset.id);
+$('rows').addEventListener('click', e=>{
+  const g = rowOf(e.target); if(!g) return;
+  const t = e.target.closest('[data-t]');
+  if(t){ g[t.dataset.t] = !g[t.dataset.t]; save(); renderList(); return; }
+  if(e.target.closest('[data-del]')){
+    state.guests = state.guests.filter(x=>x!==g); save(); renderList();
+  }
+});
+$('rows').addEventListener('change', e=>{
+  const g = rowOf(e.target), f = e.target.dataset.f; if(!g||!f) return;
+  g[f] = f==='name' ? (e.target.value.trim() || g.name) : e.target.value;
+  save(); renderList();
+});
+$('empty').addEventListener('click', e=>{
+  if(e.target.id!=='sampleBtn') return;
+  const S = [
+    ['jen-family','Mum & Dad (Jen)',1],['jen-family','Aunt Carol',1],['jen-family','Cousin Beth',0],['jen-family','Grandma Rose',0],
+    ['neil-family','Mum & Dad (Neil)',1],['neil-family','Uncle Dave',1],['neil-family','Cousin Sam',0],['neil-family','Brother Tom',1],
+    ['joint-friends','Alex & Priya',1],['joint-friends','Marcus',0],['joint-friends','Lena',1],
+    ['neil-friends','Rob',1],['neil-friends','Chris',0],['neil-friends','Jamie (work)',0],
+    ['jen-friends','Sophie',1],['jen-friends','Hannah',0],['jen-friends','Mei',1],['jen-friends','Dana',0],
+  ];
+  S.forEach(([group,name,plus],i)=>state.guests.push({id:uid(),name,group,invited:i%7!==6,plus:!!plus,notes:''}));
+  save(); renderList();
+});
+
+$('exportBtn').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([toCSV()],{type:'text/csv'}));
+  a.download = 'neil-jen-guest-list.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('importFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const n = importCSV(await f.text());
+  alert(n ? `Imported ${n} guest${n===1?'':'s'}.` : 'No guests found in that file.');
+  e.target.value='';
+});
+
+initControls();
+show(location.hash==='#summary' ? 'summary' : 'list');
+</script>
+</body>
+</html>
