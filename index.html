@@ -241,6 +241,7 @@ const DEFAULTS = [
   ["Skin + Shannon","neil-friends","couple"],
   ["Sean Doyle","joint-friends","single"],
   ["Shane + Ailise","joint-friends","couple"],
+  ["Rachel & Tony","joint-friends","couple"],
   ["James + Laura","neil-friends","couple"],
   ["John + Sharon Quinn","neil-family","couple"],
   ["Paul + Mary Quinn","neil-family","couple"],
@@ -266,7 +267,13 @@ let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.guests)) return {guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
+    if(s && Array.isArray(s.guests)){
+      // one-time add for browsers that already saved the list before Rachel & Tony were added
+      if(!s.guests.some(g=>/^rachel\s*(&|\+|and)\s*tony$/i.test(g.name.trim())) && !s.addedRachelTony){
+        s.guests.push({id:uid(),name:'Rachel & Tony',group:'joint-friends',invited:true,party:'couple',notes:''});
+      }
+    }
+    if(s && Array.isArray(s.guests)) return {addedRachelTony:true, guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
   }catch(e){}
   return {guests:DEFAULTS, target:0};
 }
