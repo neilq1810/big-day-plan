@@ -9,14 +9,14 @@
   --bg:#faf7f2; --surface:#ffffff; --ink:#2b2622; --muted:#75695f; --line:#e6dfd5;
   --accent:#8a5a44; --accent-ink:#ffffff; --soft:#f3ede4; --danger:#b3392f; --ok:#2f7d52;
   --jen-family:#c2577a; --neil-family:#3b6f9a; --joint-friends:#7b5ea7; --neil-friends:#3f9a8b; --jen-friends:#d58a2f;
-  --jen:#c2577a; --neil:#3b6f9a; --joint:#7b5ea7; --family:#a8674a; --friends:#5a8a6a;
+  --kids:#9a9a2e; --kidsside:#9a9a2e; --jen:#c2577a; --neil:#3b6f9a; --joint:#7b5ea7; --family:#a8674a; --friends:#5a8a6a;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#1b1815; --surface:#26221e; --ink:#f1ebe3; --muted:#a89d92; --line:#3a342e;
     --accent:#d9a487; --accent-ink:#1b1815; --soft:#2f2a25; --danger:#ef7d72; --ok:#6cc08f;
     --jen-family:#e0799a; --neil-family:#6a9fc9; --joint-friends:#a58bd1; --neil-friends:#62bfae; --jen-friends:#eeaa5a;
-    --jen:#e0799a; --neil:#6a9fc9; --joint:#a58bd1; --family:#d49474; --friends:#82b896;
+    --kids:#cfcf5a; --kidsside:#cfcf5a; --jen:#e0799a; --neil:#6a9fc9; --joint:#a58bd1; --family:#d49474; --friends:#82b896;
   }
 }
 *{box-sizing:border-box}
@@ -97,6 +97,16 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
 .stack .p{border-radius:3px;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}
 .stack .o{border-radius:3px;border:1.5px dashed currentColor;background:transparent;opacity:.8}
 .lens tr.total td{font-weight:700;background:var(--soft)}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.vcard{background:var(--surface);border:1px solid var(--line);border-top:5px solid;border-radius:14px;padding:14px 16px}
+.vcard h2{display:flex;justify-content:space-between;align-items:baseline;font:600 18px/1.2 Georgia,serif;margin:0 0 8px}
+.vcard h2 span{font:500 13px system-ui,sans-serif;color:var(--muted)}
+.vcard ul{list-style:none;margin:0;padding:0}
+.vcard li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+.vcard li:last-child{border-bottom:0}
+.vcard li.off .nm{color:var(--muted);text-decoration:line-through}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--accent);color:var(--accent-ink)}
+.tag.off{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
 .note{font-size:13px;color:var(--muted);margin:2px 0 10px}
 </style>
 </head>
@@ -105,13 +115,24 @@ details textarea{width:100%;min-height:90px;margin:8px 0}
   <header>
     <h1><small>Wedding planning</small>Neil &amp; Jen &mdash; Guest List</h1>
     <nav role="tablist" aria-label="Pages">
-      <button role="tab" id="tab-list" aria-selected="true" data-view="list">Guest list</button>
+      <button role="tab" id="tab-view" aria-selected="true" data-view="view">View</button>
+      <button role="tab" id="tab-list" aria-selected="false" data-view="list">Edit</button>
       <button role="tab" id="tab-summary" aria-selected="false" data-view="summary">Summary</button>
     </nav>
   </header>
 
-  <!-- GUEST LIST -->
-  <main id="view-list">
+  <!-- VIEW -->
+  <main id="view-view">
+    <div class="toolbar" style="margin-bottom:14px">
+      <span class="muted" id="viewTotals"></span>
+      <span style="flex:1"></span>
+      <label><input type="checkbox" id="showNot" checked> Show not invited</label>
+    </div>
+    <div class="vgrid" id="viewGrid"></div>
+  </main>
+
+  <!-- EDIT -->
+  <main id="view-list" hidden>
     <div class="card">
       <div class="addrow">
         <input type="text" id="addName" placeholder="Add a guest&hellip; (press Enter)" aria-label="Guest name" autocomplete="off">
@@ -173,10 +194,18 @@ const GROUPS = [
   {id:'joint-friends', label:'Joint friends',  side:'joint', type:'friends'},
   {id:'neil-friends',  label:'Neil friends',   side:'neil',  type:'friends'},
   {id:'jen-friends',   label:'Jen friends',    side:'jen',   type:'friends'},
+  {id:'kids',          label:'Kids',           side:'kids',  type:'kids'},
 ];
 const G = Object.fromEntries(GROUPS.map(g=>[g.id,g]));
 const col = id => `var(--${id})`;
-const KEY = 'neil-jen-guestlist-v1';
+const KEY = 'neil-jen-guestlist-v2';
+const DEFAULTS = [
+  ['Angela','jen-family',0],['David (Dad)','jen-family',0],['David (Brother)','jen-family',1],
+  ['Shauna Keating','jen-family',0],['Megan Keating','jen-family',0],['Suzanne','jen-family',0],
+  ['Niamh + Ian','jen-friends',1],['Katie + Luke','jen-friends',1],['Naomi + Tony','joint-friends',1],
+  ['Michelle + Niall','jen-friends',1],['Anne and Stefan','neil-family',1],['Neil Da','neil-family',0],
+  ['Josh + Jade','neil-family',1],['Cian + Amy','neil-family',1],['Fiadh','kids',0],['Jayden','kids',0],
+].map(([name,group,plus])=>({id:uid(),name,group,invited:true,plus:!!plus,notes:''}));
 
 let state = load();
 let ui = {q:'', status:'all', group:null, sort:null, dir:1};
@@ -186,10 +215,10 @@ function load(){
     const s = JSON.parse(localStorage.getItem(KEY));
     if(s && Array.isArray(s.guests)) return {guests:s.guests, target:s.target||0};
   }catch(e){}
-  return {guests:[], target:0};
+  return {guests:DEFAULTS, target:0};
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
-const uid = () => Math.random().toString(36).slice(2,10);
+function uid(){ return Math.random().toString(36).slice(2,10); }
 const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $ = id => document.getElementById(id);
 
@@ -321,9 +350,9 @@ const pct = (a,b) => b ? Math.round(a/b*100)+'%' : '–';
 function stackBar(s, color, max){
   const w = n => max ? (n/max*100).toFixed(2)+'%' : '0%';
   return `<div class="stack" style="color:${color}" aria-hidden="true">
-    <i class="g" style="width:${w(s.invited)};background:${color}"></i>
-    <i class="p" style="width:${w(s.plus)};background-color:${color}"></i>
-    <i class="o" style="width:${w(s.notInvited)}"></i></div>`;
+    ${s.invited?`<i class="g" style="width:${w(s.invited)};background:${color}"></i>`:''}
+    ${s.plus?`<i class="p" style="width:${w(s.plus)};background-color:${color}"></i>`:''}
+    ${s.notInvited?`<i class="o" style="width:${w(s.notInvited)}"></i>`:''}</div>`;
 }
 
 function lens(title, note, defs){
@@ -344,7 +373,7 @@ function lens(title, note, defs){
 function renderSummary(){
   const el = $('summary');
   if(!state.guests.length){
-    el.innerHTML = `<div class="card empty">Nothing to summarize yet. Add guests on the Guest list page.</div>`;
+    el.innerHTML = `<div class="card empty">Nothing to summarize yet. Add guests on the Edit page.</div>`;
     return;
   }
   const t = stats(state.guests);
@@ -357,6 +386,7 @@ function renderSummary(){
     {id:'jen',label:'Jen’s side', color:col('jen'), groups:['jen-family','jen-friends']},
     {id:'neil',label:'Neil’s side', color:col('neil'), groups:['neil-family','neil-friends']},
     {id:'joint',label:'Joint', color:col('joint'), groups:['joint-friends']},
+    {id:'kids',label:'Kids', color:col('kidsside'), groups:['kids']},
   ];
   const share = (defs) => defs.map(d=>({d, s:forGroups(d.groups)})).filter(x=>x.s.head>0)
     .map(x=>`<span style="width:${t.head?x.s.head/t.head*100:0}%;background:${x.d.color}" title="${esc(x.d.label)}: ${x.s.head}">${x.s.head/t.head>.08?pct(x.s.head,t.head):''}</span>`).join('');
@@ -384,22 +414,41 @@ function renderSummary(){
       <span><i class="sw guest"></i>Invited guest</span><span><i class="sw plusone"></i>Plus-one</span><span><i class="sw off"></i>Not invited</span>
     </div>
 
-    ${lens('By group','Each of your five guest groups.', GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}
-    ${lens('By side','Jen vs. Neil vs. shared friends.', sides)}
-    ${lens('Family vs. friends','Across both sides.', [
+    ${lens('By group','Each guest group.', GROUPS.map(g=>({label:g.label,color:col(g.id),groups:[g.id]})))}
+    ${lens('By side','Jen vs. Neil vs. shared friends, with kids on their own.', sides)}
+    ${lens('Family vs. friends','Adults by family or friends, plus kids.', [
       {label:'Family',color:col('family'),groups:['jen-family','neil-family']},
-      {label:'Friends',color:col('friends'),groups:['joint-friends','neil-friends','jen-friends']}])}
+      {label:'Friends',color:col('friends'),groups:['joint-friends','neil-friends','jen-friends']},
+      {label:'Kids',color:col('kidsside'),groups:['kids']}])}
     <p class="note">Headcount = invited guests + their +1s. Share is of total headcount. +1 rate = plus-ones &divide; invited guests.</p>`;
 
   $('targetIn').addEventListener('change', e=>{ state.target = Math.max(0, +e.target.value||0); save(); renderSummary(); });
 }
 
+/* ---------- view ---------- */
+function renderView(){
+  const showNot = $('showNot').checked;
+  const t = stats(state.guests);
+  $('viewTotals').innerHTML = `<b>${t.head}</b> attending (${t.invited} invited + ${t.plus} plus-ones)` + (t.notInvited?` \u00B7 ${t.notInvited} not invited`:'');
+  const cards = GROUPS.map(g=>{
+    const list = state.guests.filter(x=>x.group===g.id && (showNot || x.invited));
+    if(!list.length) return '';
+    const s = stats(state.guests.filter(x=>x.group===g.id));
+    return `<section class="vcard" style="border-top-color:${col(g.id)}"><h2>${g.label}<span>${s.head} attending</span></h2><ul>${
+      list.map(x=>`<li class="${x.invited?'':'off'}"><span class="nm">${esc(x.name)}</span>${x.plus?'<span class="tag">+1</span>':''}${x.invited?'':'<span class="tag off">not invited</span>'}${x.notes?`<span class="muted" style="font-size:12px">${esc(x.notes)}</span>`:''}</li>`).join('')
+    }</ul></section>`;
+  }).join('');
+  $('viewGrid').innerHTML = cards || '<div class="card empty" style="grid-column:1/-1">No guests yet. Add some on the Edit page.</div>';
+}
+$('showNot').addEventListener('change', renderView);
+
 /* ---------- events ---------- */
 function show(view){
-  $('view-list').hidden = view!=='list';
-  $('view-summary').hidden = view!=='summary';
-  ['list','summary'].forEach(v=>$('tab-'+v).setAttribute('aria-selected', v===view));
-  if(view==='summary') renderSummary(); else renderList();
+  ['view','list','summary'].forEach(v=>{
+    $('view-'+v).hidden = v!==view;
+    $('tab-'+v).setAttribute('aria-selected', v===view);
+  });
+  if(view==='summary') renderSummary(); else if(view==='view') renderView(); else renderList();
   if(location.hash!=='#'+view) history.replaceState(null,'','#'+view);
 }
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
@@ -467,7 +516,7 @@ $('importFile').addEventListener('change', async e=>{
 });
 
 initControls();
-show(location.hash==='#summary' ? 'summary' : 'list');
+show(['#summary','#list'].includes(location.hash) ? location.hash.slice(1) : 'view');
 </script>
 </body>
 </html>
