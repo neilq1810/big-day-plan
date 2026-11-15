@@ -206,65 +206,64 @@ const GROUPS = [
 ];
 const G = Object.fromEntries(GROUPS.map(g=>[g.id,g]));
 const col = id => `var(--${id})`;
-const KEY = 'neil-jen-guestlist-v3';
+const KEY = 'neil-jen-guestlist-v4';
 const PARTY = {single:'Single', plus1:'+1', couple:'Couple'};
 const TWO = /\s(\+|&|and)\s/i;
 const DEFAULTS = [
-  ["Angela","jen-family","single"],
-  ["David (Dad)","jen-family","single"],
-  ["David (Brother)","jen-family","plus1"],
-  ["Shauna Keating","jen-family","single"],
-  ["Megan + Suzanne","jen-family","couple"],
-  ["Niamh + Ian","jen-friends","couple"],
-  ["Katie + Luke","jen-friends","couple"],
-  ["Naomi + Tony","joint-friends","couple"],
-  ["Michelle + Niall","jen-friends","couple"],
-  ["Anne and Stefan","neil-family","couple"],
-  ["Neil Da","neil-family","single"],
-  ["Josh + Jade","neil-family","couple"],
-  ["Cian + Amy","neil-family","couple"],
-  ["Fiadh","kids","single"],
-  ["Jayden","kids","single"],
-  ["Grainne Breen","jen-friends","single"],
-  ["Maria Gilfoyle","jen-friends","single"],
-  ["Celine","jen-friends","single"],
-  ["Esther","jen-friends","single"],
-  ["Nathan + Danielle","neil-friends","couple"],
-  ["Gary + Amy","neil-friends","couple"],
-  ["Ghosty","neil-friends","single"],
-  ["Conor Staunton","neil-friends","single"],
-  ["Kegan","neil-friends","single"],
-  ["Savannah","neil-friends","single"],
-  ["Conor & Colm","neil-family","couple"],
-  ["Julianne + Fella","neil-family","couple"],
-  ["Anju","jen-friends","single"],
-  ["Ciara Jones","jen-friends","single"],
-  ["Shauna Fitzgerald","jen-friends","single"],
-  ["Aoife Murray","jen-friends","single"],
-  ["Dawn Travers","jen-friends","single"],
-  ["Jason Griffiths","neil-friends","single"],
-  ["Skin + Shannon","neil-friends","couple"],
-  ["Sean Doyle","joint-friends","single"],
-  ["Shane + Ailise","joint-friends","couple"],
-  ["Rachel & Tony","joint-friends","couple"],
-  ["James + Laura","neil-friends","couple"],
-  ["John + Sharon Quinn","neil-family","couple"],
-  ["Paul + Mary Quinn","neil-family","couple"],
-  ["Mark + Charmaine Quinn","neil-family","couple"],
-  ["Aodhan Callan","joint-friends","single"],
-  ["Michael Twohig","joint-friends","single"],
-  ["Luke Guinane","joint-friends","single"],
-  ["Martin + Wife Quinn","neil-family","couple"],
-  ["Mary Hutchinson","neil-family","single"],
-  ["Stephen Hutchinson","neil-family","single"],
-  ["Paul + Dolores Hutchinson","neil-family","couple"],
-  ["Phillis + Pete Hutchinson","neil-family","couple"],
-  ["Karen + Michael","joint-friends","couple"],
-  ["Jake Connolly","joint-friends","single"],
-  ["Padraig Walsh","joint-friends","single"],
-  ["Amy Strilciw","neil-family","single"],
-  ["Lewis Strilciw","neil-family","single"]
-].map(([name,group,party])=>({id:uid(),name,group,invited:true,party,notes:''}));
+  ["David & Angela","jen-family","couple",0],
+  ["David (Brother)","jen-family","plus1",0],
+  ["Shauna Keating","jen-family","single",0],
+  ["Megan + Suzanne","jen-family","couple",0],
+  ["Niamh + Ian","jen-friends","couple",0],
+  ["Katie + Luke","jen-friends","couple",0],
+  ["Naomi + Tony","joint-friends","couple",0],
+  ["Michelle + Niall","jen-friends","couple",0],
+  ["Anne and Stefan","neil-family","couple",0],
+  ["Neil Da","neil-family","single",0],
+  ["Josh + Jade","neil-family","couple",0],
+  ["Cian + Amy","neil-family","couple",0],
+  ["Fiadh","kids","single",0],
+  ["Jayden","kids","single",1],
+  ["Grainne Breen","jen-friends","single",0],
+  ["Maria Gilfoyle","jen-friends","single",0],
+  ["Celine","jen-friends","single",0],
+  ["Esther","jen-friends","single",0],
+  ["Nathan + Danielle","neil-friends","couple",0],
+  ["Gary + Amy","neil-friends","couple",0],
+  ["Ghosty","neil-friends","single",0],
+  ["Conor Staunton","neil-friends","single",0],
+  ["Kegan","neil-friends","single",0],
+  ["Savannah","neil-friends","single",0],
+  ["Conor & Colm","neil-family","couple",0],
+  ["Julianne + Fella","neil-family","couple",0],
+  ["Anju","jen-friends","single",0],
+  ["Ciara Jones","jen-friends","single",0],
+  ["Shauna Fitzgerald","jen-friends","single",1],
+  ["Aoife Murray","jen-friends","single",1],
+  ["Dawn Travers","jen-friends","single",0],
+  ["Jason Griffiths","neil-friends","single",0],
+  ["Skin + Shannon","neil-friends","couple",0],
+  ["Sean Doyle","joint-friends","single",0],
+  ["Shane + Ailise","joint-friends","couple",0],
+  ["Rachel & Tony","joint-friends","couple",0],
+  ["James + Laura","neil-friends","couple",0],
+  ["John + Sharon Quinn","neil-family","couple",1],
+  ["Paul + Mary Quinn","neil-family","couple",0],
+  ["Mark + Charmaine Quinn","neil-family","couple",0],
+  ["Aodhan Callan","joint-friends","single",0],
+  ["Michael Twohig","joint-friends","single",0],
+  ["Luke Guinane","joint-friends","single",1],
+  ["Martin + Wife Quinn","neil-family","couple",1],
+  ["Mary Hutchinson","neil-family","single",0],
+  ["Stephen Hutchinson","neil-family","single",0],
+  ["Paul + Dolores Hutchinson","neil-family","couple",0],
+  ["Phillis + Pete Hutchinson","neil-family","couple",1],
+  ["Karen + Michael","joint-friends","couple",0],
+  ["Jake Connolly","joint-friends","single",1],
+  ["Padraig Walsh","joint-friends","single",0],
+  ["Amy Strilciw","neil-family","single",0],
+  ["Lewis Strilciw","neil-family","single",0]
+].map(([name,group,party,maybe])=>({id:uid(),name,group,invited:true,party,maybe:!!maybe,notes:''}));
 
 let state = load();
 let ui = {q:'', status:'all', group:null, sort:null, dir:1};
@@ -272,13 +271,7 @@ let ui = {q:'', status:'all', group:null, sort:null, dir:1};
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s && Array.isArray(s.guests)){
-      // one-time add for browsers that already saved the list before Rachel & Tony were added
-      if(!s.guests.some(g=>/^rachel\s*(&|\+|and)\s*tony$/i.test(g.name.trim())) && !s.addedRachelTony){
-        s.guests.push({id:uid(),name:'Rachel & Tony',group:'joint-friends',invited:true,party:'couple',notes:''});
-      }
-    }
-    if(s && Array.isArray(s.guests)) return {addedRachelTony:true, guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
+    if(s && Array.isArray(s.guests)) return {guests:s.guests.map(g=>g.party?g:{...g,party:g.plus?(TWO.test(g.name)?'couple':'plus1'):'single'}), target:s.target||0};
   }catch(e){}
   return {guests:DEFAULTS, target:0};
 }
